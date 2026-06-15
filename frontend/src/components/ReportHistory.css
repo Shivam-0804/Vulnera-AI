@@ -49,22 +49,12 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   box-shadow: var(--shadow);
 }
 
-.report-card.clickable {
-  cursor: pointer;
-}
-
-.report-card.clickable:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow), 0 0 24px rgba(56, 189, 248, 0.08);
-  transform: translateY(-2px);
-}
-
-.report-card.legacy {
-  opacity: 0.85;
+.report-card:hover {
+  border-color: var(--border-hover);
 }
 
 .report-card-top {
@@ -149,29 +139,51 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.report-card-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.report-action {
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.74rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.report-action.view {
+  color: var(--accent);
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.report-action.view:hover {
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.report-action.download {
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.report-action.download:hover {
+  background: rgba(16, 185, 129, 0.15);
 }
 
 .report-date {
   font-size: 0.75rem;
   color: var(--text-muted);
-}
-
-.view-link {
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--accent);
-}
-
-.download-link {
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--success);
-  text-decoration: none;
-}
-
-.download-link:hover {
-  text-decoration: underline;
 }
 
 .history-loading,

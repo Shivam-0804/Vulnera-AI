@@ -10,7 +10,7 @@ const RISK_COLORS = {
   Informational: 'var(--info)',
 }
 
-function ReportHistory({ onViewReport }) {
+function ReportHistory({ onViewReport, onViewPdf }) {
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -31,6 +31,20 @@ function ReportHistory({ onViewReport }) {
       setError(err.message || 'Failed to load report history')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleView = (report) => {
+    if (report.has_full_data) {
+      onViewReport(report.id)
+      return
+    }
+
+    if (report.report_filename) {
+      onViewPdf(
+        report.report_filename,
+        report.url || report.domain || 'Legacy PDF report'
+      )
     }
   }
 
@@ -79,21 +93,10 @@ function ReportHistory({ onViewReport }) {
           const typeInfo = SCAN_TYPES[report.scan_type] || { icon: '📄' }
           const highestRisk = getHighestRisk(report.summary)
           const riskColor = highestRisk ? RISK_COLORS[highestRisk] : 'var(--text-muted)'
+          const canView = report.has_full_data || Boolean(report.report_filename)
 
           return (
-            <article
-              key={report.id}
-              className={`report-card ${report.has_full_data ? 'clickable' : 'legacy'}`}
-              onClick={() => report.has_full_data && onViewReport(report.id)}
-              role={report.has_full_data ? 'button' : undefined}
-              tabIndex={report.has_full_data ? 0 : undefined}
-              onKeyDown={(e) => {
-                if (report.has_full_data && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault()
-                  onViewReport(report.id)
-                }
-              }}
-            >
+            <article key={report.id} className="report-card">
               <div className="report-card-top">
                 <span className="report-type-badge">
                   {typeInfo.icon} {report.scan_label || 'Report'}
@@ -134,18 +137,26 @@ function ReportHistory({ onViewReport }) {
 
               <div className="report-card-footer">
                 <time className="report-date">{formatDate(report.created_at)}</time>
-                {report.has_full_data ? (
-                  <span className="view-link">View report →</span>
-                ) : (
-                  <a
-                    href={`/download/${report.report_filename}`}
-                    className="download-link"
-                    onClick={(e) => e.stopPropagation()}
-                    download
-                  >
-                    ⬇️ PDF only
-                  </a>
-                )}
+                <div className="report-card-actions">
+                  {canView && (
+                    <button
+                      type="button"
+                      className="report-action view"
+                      onClick={() => handleView(report)}
+                    >
+                      👁 View
+                    </button>
+                  )}
+                  {report.report_filename && (
+                    <a
+                      href={`/download/${report.report_filename}`}
+                      className="report-action download"
+                      download
+                    >
+                      ⬇️ Download
+                    </a>
+                  )}
+                </div>
               </div>
             </article>
           )

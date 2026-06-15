@@ -11,6 +11,7 @@ function ResultsView({
   onReset,
   resetLabel = '🔁 Scan Another',
   isHistorical = false,
+  onViewPdf,
 }) {
   const {
     url,
@@ -26,6 +27,12 @@ function ResultsView({
   } = results
 
   const typeInfo = SCAN_TYPES[scan_type] || { icon: '🔍' }
+
+  const handleViewPdf = () => {
+    if (report_filename && onViewPdf) {
+      onViewPdf(report_filename, url || scan_label || 'VAPT report')
+    }
+  }
 
   return (
     <div className="results-view">
@@ -58,19 +65,24 @@ function ResultsView({
       <div className="results-grid">
         <AlertSummary summary={summary} total={zap_alerts.length} />
         <GeminiAnalysis gemini={gemini} />
-        <AlertDetails alerts={zap_alerts} />
+        <AlertDetails alerts={zap_alerts} defaultExpanded={isHistorical} />
         <NmapSection output={nmap_output} scanType={scan_type} />
       </div>
 
-      <div className="download-section">
-        <a
-          href={`/download/${report_filename}`}
-          className="download-button"
-          download
-        >
-          ⬇️ Download Full PDF Report
-        </a>
-      </div>
+      {report_filename && (
+        <div className="report-actions">
+          <button type="button" className="report-action-btn view" onClick={handleViewPdf}>
+            👁 View PDF Report
+          </button>
+          <a
+            href={`/download/${report_filename}`}
+            className="report-action-btn download"
+            download
+          >
+            ⬇️ Download PDF Report
+          </a>
+        </div>
+      )}
     </div>
   )
 }

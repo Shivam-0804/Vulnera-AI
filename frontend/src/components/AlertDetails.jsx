@@ -8,8 +8,8 @@ const RISK_CLASS = {
   Informational: 'risk-info',
 }
 
-function AlertDetails({ alerts }) {
-  const [expanded, setExpanded] = useState(false)
+function AlertDetails({ alerts, defaultExpanded = false }) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
 
   if (!alerts.length) {
     return (
@@ -45,11 +45,7 @@ function AlertDetails({ alerts }) {
                 <p className="alert-url">{alert.url}</p>
               )}
               {alert.description && (
-                <p className="alert-desc">
-                  {alert.description.length > 300
-                    ? `${alert.description.slice(0, 300)}...`
-                    : alert.description}
-                </p>
+                <p className="alert-desc">{alert.description}</p>
               )}
               {alert.solution && (
                 <p className="alert-fix">

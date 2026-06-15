@@ -1,0 +1,38 @@
+{
+  "id": "1781538443",
+  "created_at": "2026-06-15T15:47:23.431786+00:00",
+  "url": "http://testphp.vulnweb.com",
+  "domain": "testphp.vulnweb.com",
+  "scan_type": "passive",
+  "scan_label": "Passive Scan",
+  "scan_description": "Quick and non-intrusive. Analyzes traffic without attacking the target.",
+  "zap_alerts": [],
+  "nmap_output": "Starting Nmap 7.99 ( https://nmap.org ) at 2026-06-15 21:16 +0530\nNmap scan report for testphp.vulnweb.com (44.228.249.3)\nHost is up.\nrDNS record for 44.228.249.3: ec2-44-228-249-3.us-west-2.compute.amazonaws.com\nAll 100 scanned ports on testphp.vulnweb.com (44.228.249.3) are in ignored states.\nNot shown: 100 filtered tcp ports (no-response)\n\nNmap done: 1 IP address (1 host up) scanned in 11.44 seconds",
+  "report_filename": "report_1781538443.pdf",
+  "summary": {
+    "High": 0,
+    "Medium": 0,
+    "Low": 0,
+    "Informational": 0
+  },
+  "ai": {
+    "available": false,
+    "analysis": "## Executive Summary\nThe passive scan for http://testphp.vulnweb.com completed successfully. The overall risk level is informational. 0 alerts were collected from ZAP.\n\n## Risk Level\nOverall Rating: Informational\nHigh: 0 | Medium: 0 | Low: 0 | Informational: 0\n\n## Key Vulnerabilities\n- No ZAP alerts were returned during this scan.\n\n## Network Exposure\n- No open TCP ports were reported by Nmap or the target filtered the scan.\n\n## Prioritized Recommendations\n1. Fix all high-risk findings first.\n2. Review medium-risk findings and add input validation, authentication, and security headers.\n3. Retest after remediation to confirm the issue is resolved.\n4. Reduce exposed services and close unnecessary ports.",
+    "message": "HTTP Error 404: Not Found",
+    "provider": "local"
+  },
+  "scan_meta": {
+    "zap_mode": "passive",
+    "nmap_args": [
+      "-Pn",
+      "-F",
+      "-T4"
+    ],
+    "zap_steps": [
+      "Loaded target through ZAP",
+      "Passive processing finished"
+    ],
+    "zap_error": null,
+    "parallel_scan_seconds": 36.2
+  }
+}
