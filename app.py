@@ -1,6 +1,7 @@
 from flask import Flask, request, send_from_directory, jsonify
 from flask_cors import CORS
 from zapv2 import ZAPv2
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import subprocess
 import os
 import json
@@ -466,9 +467,38 @@ def run_full_scan(url, scan_type=DEFAULT_SCAN_TYPE):
     if not domain:
         return None, "Invalid URL"
 
-    raw_alerts, zap_steps, zap_error = run_zap_scan(url, scan_config)
+    scan_start = time.time()
+    zap_steps = []
+    zap_error = None
+    raw_alerts = []
+    nmap_output = ""
+
+    print(f"[Scan] Running ZAP and Nmap in parallel for {url}")
+    with ThreadPoolExecutor(max_workers=2, thread_name_prefix="scan") as executor:
+        futures = {
+            executor.submit(run_zap_scan, url, scan_config): "zap",
+            executor.submit(
+                run_nmap_scan, domain, scan_config["nmap_args"]
+            ): "nmap",
+        }
+        for future in as_completed(futures):
+            task = futures[future]
+            try:
+                if task == "zap":
+                    raw_alerts, zap_steps, zap_error = future.result()
+                else:
+                    nmap_output = future.result()
+            except Exception as e:
+                print(f"[Scan] {task} task failed: {e}")
+                if task == "zap":
+                    zap_error = str(e)
+                else:
+                    nmap_output = f"[Nmap Error] {str(e)}"
+
+    parallel_elapsed = round(time.time() - scan_start, 1)
+    print(f"[Scan] Parallel phase completed in {parallel_elapsed}s")
+
     zap_alerts = normalize_zap_alerts(raw_alerts)
-    nmap_output = run_nmap_scan(domain, scan_config["nmap_args"])
 
     gemini_result = analyze_with_gemini(
         zap_alerts, nmap_output, url, scan_type=scan_type
@@ -503,6 +533,7 @@ def run_full_scan(url, scan_type=DEFAULT_SCAN_TYPE):
             "nmap_args": scan_config["nmap_args"],
             "zap_steps": zap_steps,
             "zap_error": zap_error,
+            "parallel_scan_seconds": parallel_elapsed,
         },
     }
 
