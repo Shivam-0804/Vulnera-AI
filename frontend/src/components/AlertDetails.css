@@ -1,0 +1,135 @@
+.alert-details h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.details-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+}
+
+.chevron {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.chevron.open {
+  transform: rotate(180deg);
+}
+
+.no-alerts {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.alert-list {
+  list-style: none;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.alert-item {
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text-muted);
+  border-radius: var(--radius-sm);
+}
+
+.alert-item.risk-high {
+  border-left-color: var(--danger);
+}
+
+.alert-item.risk-medium {
+  border-left-color: var(--warning);
+}
+
+.alert-item.risk-low {
+  border-left-color: var(--low);
+}
+
+.alert-item.risk-info {
+  border-left-color: var(--info);
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.alert-header strong {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.risk-badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.risk-badge.risk-high {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--danger);
+}
+
+.risk-badge.risk-medium {
+  background: rgba(251, 146, 60, 0.15);
+  color: var(--warning);
+}
+
+.risk-badge.risk-low {
+  background: rgba(250, 204, 21, 0.15);
+  color: var(--low);
+}
+
+.risk-badge.risk-info {
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--info);
+}
+
+.alert-url {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  word-break: break-all;
+  margin-bottom: 0.4rem;
+}
+
+.alert-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0.4rem;
+}
+
+.alert-fix {
+  font-size: 0.82rem;
+  color: var(--success);
+  line-height: 1.4;
+}
+
+.alert-fix em {
+  font-style: normal;
+  font-weight: 600;
+}

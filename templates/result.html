@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scan Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Scan Summary</h1>
+
+        <section class="summary">
+            <h2>ZAP Alert Summary</h2>
+            <ul>
+                <li>High Risk: {{ zap_alerts | selectattr("risk", "equalto", "High") | list | length }}</li>
+                <li>Medium Risk: {{ zap_alerts | selectattr("risk", "equalto", "Medium") | list | length }}</li>
+                <li>Low Risk: {{ zap_alerts | selectattr("risk", "equalto", "Low") | list | length }}</li>
+                <li>Informational: {{ zap_alerts | selectattr("risk", "equalto", "Informational") | list | length }}</li>
+            </ul>
+        </section>
+
+        <section class="details">
+            <details>
+                <summary>🔐 View Detailed ZAP Vulnerabilities</summary>
+                <ul>
+                    {% for alert in zap_alerts %}
+                        <li>
+                            <strong>{{ alert.alert }} ({{ alert.risk }})</strong><br>
+                            {{ alert.description[:200] }}{% if alert.description|length > 200 %}...{% endif %}<br>
+                            <em>Fix:</em> {{ alert.solution or 'Refer to official documentation.' }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </details>
+        </section>
+
+        <section class="nmap-section">
+            <h2>🧭 Nmap Open Ports Summary</h2>
+            <pre>{{ nmap_output }}</pre>
+        </section>
+
+        <div class="download-section">
+            <a href="{{ url_for('download_report', filename=report_filename) }}" class="download-btn" download>
+                ⬇️ Download Full PDF Report
+            </a>
+        </div>
+
+        <div class="back">
+            <a href="/" class="download-btn">🔁 Scan Another Site</a>
+        </div>
+    </div>
+</body>
+</html>

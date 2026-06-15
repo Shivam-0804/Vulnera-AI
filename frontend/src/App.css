@@ -1,0 +1,65 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.app-header {
+  margin-bottom: 2.5rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo-icon {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.4));
+}
+
+.logo h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+.tagline {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-top: 0.15rem;
+}
+
+.app-main {
+  flex: 1;
+}
+
+.app-footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.app-footer p {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .app {
+    padding: 1.25rem 1rem;
+  }
+
+  .logo h1 {
+    font-size: 1.35rem;
+  }
+}
