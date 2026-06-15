@@ -3,9 +3,11 @@ from flask_cors import CORS
 from zapv2 import ZAPv2
 import subprocess
 import os
+import json
 import time
 import socket
 import textwrap
+from datetime import datetime, timezone
 from fpdf import FPDF
 from urllib.parse import urlparse
 from os.path import basename
@@ -69,6 +71,84 @@ REPORT_DIR = "reports"
 os.makedirs(REPORT_DIR, exist_ok=True)
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+
+
+# -------------------------------
+# SCAN HISTORY
+# -------------------------------
+def scan_json_path(scan_id):
+    return os.path.join(REPORT_DIR, f"report_{scan_id}.json")
+
+
+def save_scan_record(result):
+    scan_id = result["id"]
+    path = scan_json_path(scan_id)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(result, f, ensure_ascii=False, indent=2)
+    return path
+
+
+def load_scan_record(scan_id):
+    path = scan_json_path(scan_id)
+    if not os.path.isfile(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def list_scan_records():
+    records = []
+    report_dir = Path(REPORT_DIR)
+
+    for json_file in sorted(report_dir.glob("report_*.json"), reverse=True):
+        try:
+            with open(json_file, encoding="utf-8") as f:
+                data = json.load(f)
+            summary = data.get("summary", {})
+            records.append(
+                {
+                    "id": data.get("id", json_file.stem.replace("report_", "")),
+                    "url": data.get("url", ""),
+                    "domain": data.get("domain", ""),
+                    "scan_type": data.get("scan_type", DEFAULT_SCAN_TYPE),
+                    "scan_label": data.get("scan_label", ""),
+                    "created_at": data.get("created_at", ""),
+                    "report_filename": data.get("report_filename", json_file.name),
+                    "summary": summary,
+                    "alert_total": sum(summary.values()),
+                    "has_full_data": True,
+                }
+            )
+        except (json.JSONDecodeError, OSError) as e:
+            print(f"[History] Skipping {json_file}: {e}")
+
+    json_stems = {r["id"] for r in records}
+    for pdf_file in sorted(report_dir.glob("report_*.pdf"), reverse=True):
+        scan_id = pdf_file.stem.replace("report_", "")
+        if scan_id not in json_stems:
+            ts = int(scan_id) if scan_id.isdigit() else 0
+            created_at = (
+                datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+                if ts
+                else ""
+            )
+            records.append(
+                {
+                    "id": scan_id,
+                    "url": "",
+                    "domain": "",
+                    "scan_type": "",
+                    "scan_label": "Legacy Report",
+                    "created_at": created_at,
+                    "report_filename": pdf_file.name,
+                    "summary": {},
+                    "alert_total": 0,
+                    "has_full_data": False,
+                }
+            )
+
+    records.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+    return records
 
 
 # -------------------------------
@@ -294,9 +374,10 @@ Use clear markdown formatting. Be specific and actionable."""
 # PDF REPORT
 # -------------------------------
 def generate_pdf_report(
-    zap_alerts, nmap_output, gemini_analysis="", scan_type="passive"
+    zap_alerts, nmap_output, gemini_analysis="", scan_type="passive", scan_id=None
 ):
     scan_label = SCAN_TYPES.get(scan_type, {}).get("label", scan_type)
+    scan_id = scan_id or str(int(time.time()))
     pdf = FPDF()
     pdf.add_page()
 
@@ -361,10 +442,10 @@ def generate_pdf_report(
             new_y="NEXT",
         )
 
-    filename = os.path.join(REPORT_DIR, f"report_{int(time.time())}.pdf")
+    filename = os.path.join(REPORT_DIR, f"report_{scan_id}.pdf")
     pdf.output(filename)
 
-    return filename
+    return filename, scan_id
 
 
 # -------------------------------
@@ -394,12 +475,19 @@ def run_full_scan(url, scan_type=DEFAULT_SCAN_TYPE):
     )
     gemini_analysis = gemini_result.get("analysis", "")
 
-    report_path = generate_pdf_report(
-        zap_alerts, nmap_output, gemini_analysis, scan_type=scan_type
+    scan_id = str(int(time.time()))
+    report_path, scan_id = generate_pdf_report(
+        zap_alerts,
+        nmap_output,
+        gemini_analysis,
+        scan_type=scan_type,
+        scan_id=scan_id,
     )
     report_filename = basename(report_path)
 
-    return {
+    result = {
+        "id": scan_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
         "url": url,
         "domain": domain,
         "scan_type": scan_type,
@@ -416,7 +504,10 @@ def run_full_scan(url, scan_type=DEFAULT_SCAN_TYPE):
             "zap_steps": zap_steps,
             "zap_error": zap_error,
         },
-    }, None
+    }
+
+    save_scan_record(result)
+    return result, None
 
 
 # -------------------------------
@@ -438,6 +529,29 @@ def api_scan():
         return jsonify({"error": error}), 400
 
     return jsonify(result)
+
+
+@app.route("/api/reports", methods=["GET"])
+def api_list_reports():
+    return jsonify({"reports": list_scan_records()})
+
+
+@app.route("/api/reports/<scan_id>", methods=["GET"])
+def api_get_report(scan_id):
+    record = load_scan_record(scan_id)
+    if not record:
+        pdf_path = os.path.join(REPORT_DIR, f"report_{scan_id}.pdf")
+        if os.path.isfile(pdf_path):
+            return jsonify(
+                {
+                    "error": "Full scan data unavailable. Only PDF download exists for this report.",
+                    "id": scan_id,
+                    "report_filename": f"report_{scan_id}.pdf",
+                    "has_full_data": False,
+                }
+            ), 404
+        return jsonify({"error": "Report not found"}), 404
+    return jsonify(record)
 
 
 @app.route("/api/scan-types", methods=["GET"])

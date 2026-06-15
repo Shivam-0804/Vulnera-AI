@@ -43,7 +43,6 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  margin-top: 0.5rem;
   padding: 0.3rem 0.75rem;
   background: rgba(56, 189, 248, 0.08);
   border: 1px solid rgba(56, 189, 248, 0.2);
@@ -51,6 +50,19 @@
   font-size: 0.78rem;
   font-weight: 500;
   color: var(--accent);
+}
+
+.results-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.scan-date {
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
 .scan-warning {

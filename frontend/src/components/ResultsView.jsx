@@ -3,9 +3,15 @@ import AlertDetails from './AlertDetails'
 import NmapSection from './NmapSection'
 import GeminiAnalysis from './GeminiAnalysis'
 import { SCAN_TYPES } from '../scanTypes'
+import { formatDate } from '../utils/format'
 import './ResultsView.css'
 
-function ResultsView({ results, onReset }) {
+function ResultsView({
+  results,
+  onReset,
+  resetLabel = '🔁 Scan Another',
+  isHistorical = false,
+}) {
   const {
     url,
     scan_type,
@@ -16,6 +22,7 @@ function ResultsView({ results, onReset }) {
     summary,
     gemini,
     scan_meta,
+    created_at,
   } = results
 
   const typeInfo = SCAN_TYPES[scan_type] || { icon: '🔍' }
@@ -24,16 +31,21 @@ function ResultsView({ results, onReset }) {
     <div className="results-view">
       <div className="results-header">
         <div>
-          <h2>Scan Results</h2>
+          <h2>{isHistorical ? 'Saved Report' : 'Scan Results'}</h2>
           <p className="results-url">
             <span className="url-label">Target:</span> {url}
           </p>
-          <div className="scan-type-badge">
-            {typeInfo.icon} {scan_label || scan_type}
+          <div className="results-meta">
+            <div className="scan-type-badge">
+              {typeInfo.icon} {scan_label || scan_type}
+            </div>
+            {created_at && (
+              <time className="scan-date">{formatDate(created_at)}</time>
+            )}
           </div>
         </div>
         <button className="reset-button" onClick={onReset}>
-          🔁 Scan Another
+          {resetLabel}
         </button>
       </div>
 

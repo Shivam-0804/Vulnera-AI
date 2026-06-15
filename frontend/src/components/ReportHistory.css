@@ -1,0 +1,240 @@
+.report-history {
+  animation: fadeIn 0.35s ease;
+}
+
+.history-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.history-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.history-header p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.refresh-btn {
+  padding: 0.55rem 1rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.refresh-btn:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-secondary);
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+.report-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  box-shadow: var(--shadow);
+}
+
+.report-card.clickable {
+  cursor: pointer;
+}
+
+.report-card.clickable:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow), 0 0 24px rgba(56, 189, 248, 0.08);
+  transform: translateY(-2px);
+}
+
+.report-card.legacy {
+  opacity: 0.85;
+}
+
+.report-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.report-type-badge {
+  padding: 0.25rem 0.6rem;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.report-risk {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.report-url {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-all;
+  line-height: 1.4;
+  margin-bottom: 0.25rem;
+}
+
+.report-domain {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  margin-bottom: 0.75rem;
+}
+
+.report-stats {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.75rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+}
+
+.stat-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.stat.high .stat-value {
+  color: var(--danger);
+}
+
+.stat.medium .stat-value {
+  color: var(--warning);
+}
+
+.report-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.report-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.view-link {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.download-link {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--success);
+  text-decoration: none;
+}
+
+.download-link:hover {
+  text-decoration: underline;
+}
+
+.history-loading,
+.history-empty,
+.history-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.history-loading .spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--bg-elevated);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.history-loading p,
+.history-empty p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.history-empty h3 {
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+}
+
+.history-error p {
+  color: var(--danger);
+  margin-bottom: 1rem;
+}
+
+.history-error button {
+  padding: 0.55rem 1.25rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .report-grid {
+    grid-template-columns: 1fr;
+  }
+}

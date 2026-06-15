@@ -2,20 +2,25 @@ import { useState } from "react";
 import ScanForm from "./components/ScanForm";
 import LoadingOverlay from "./components/LoadingOverlay";
 import ResultsView from "./components/ResultsView";
+import ReportHistory from "./components/ReportHistory";
+import AppNav from "./components/AppNav";
 import { DEFAULT_SCAN_TYPE } from "./scanTypes";
 import "./App.css";
 
 function App() {
+  const [view, setView] = useState("scan");
   const [loading, setLoading] = useState(false);
   const [loadingScanType, setLoadingScanType] = useState(DEFAULT_SCAN_TYPE);
   const [error, setError] = useState("");
   const [results, setResults] = useState(null);
+  const [viewingFromHistory, setViewingFromHistory] = useState(false);
 
   const handleScan = async (url, scanType = DEFAULT_SCAN_TYPE) => {
     setLoading(true);
     setLoadingScanType(scanType);
     setError("");
     setResults(null);
+    setViewingFromHistory(false);
 
     try {
       const response = await fetch("/api/scan", {
@@ -31,6 +36,7 @@ function App() {
       }
 
       setResults(data);
+      setView("scan");
     } catch (err) {
       setError(err.message || "An unexpected error occurred");
     } finally {
@@ -38,9 +44,47 @@ function App() {
     }
   };
 
+  const handleViewReport = async (reportId) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/reports/${reportId}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load report");
+      }
+
+      setResults(data);
+      setViewingFromHistory(true);
+    } catch (err) {
+      setError(err.message || "Failed to load report");
+      setView("history");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleReset = () => {
     setResults(null);
+    setViewingFromHistory(false);
     setError("");
+  };
+
+  const handleNavigate = (nextView) => {
+    setView(nextView);
+    setError("");
+    if (nextView !== "scan") {
+      setResults(null);
+      setViewingFromHistory(false);
+    }
+  };
+
+  const handleBackToHistory = () => {
+    setResults(null);
+    setViewingFromHistory(false);
+    setView("history");
   };
 
   return (
@@ -57,15 +101,29 @@ function App() {
         </div>
       </header>
 
+      <AppNav activeView={results ? "scan" : view} onNavigate={handleNavigate} />
+
       <main className="app-main">
-        {!results ? (
-          <ScanForm onScan={handleScan} error={error} disabled={loading} />
+        {results ? (
+          <ResultsView
+            results={results}
+            onReset={viewingFromHistory ? handleBackToHistory : handleReset}
+            resetLabel={viewingFromHistory ? "← Back to History" : "🔁 Scan Another"}
+            isHistorical={viewingFromHistory}
+          />
+        ) : view === "history" ? (
+          <ReportHistory onViewReport={handleViewReport} />
         ) : (
-          <ResultsView results={results} onReset={handleReset} />
+          <ScanForm onScan={handleScan} error={error} disabled={loading} />
         )}
       </main>
 
-      {loading && <LoadingOverlay scanType={loadingScanType} />}
+      {loading && !results && <LoadingOverlay scanType={loadingScanType} />}
+      {loading && results === null && view === "history" && (
+        <div className="history-overlay">
+          <div className="spinner" />
+        </div>
+      )}
     </div>
   );
 }
