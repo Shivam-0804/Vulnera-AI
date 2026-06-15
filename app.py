@@ -59,7 +59,7 @@ OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen3:8b").strip()
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash").strip()
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 ZAP_PROXY = os.environ.get("ZAP_PROXY", "http://localhost:8080").strip()
-ZAP_API_KEY = os.environ.get("ZAP_API_KEY", "94q9uk497obple5r0sliva2dmd").strip()
+ZAP_API_KEY = os.environ.get("ZAP_API_KEY", "").strip()
 
 app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
 CORS(app)
