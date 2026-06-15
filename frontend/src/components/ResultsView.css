@@ -39,6 +39,30 @@
   color: var(--text-muted);
 }
 
+.scan-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.75rem;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.scan-warning {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: rgba(251, 146, 60, 0.1);
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  border-radius: var(--radius-sm);
+  color: var(--warning);
+  font-size: 0.88rem;
+}
+
 .reset-button {
   padding: 0.6rem 1.2rem;
   background: var(--bg-elevated);

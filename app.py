@@ -9,11 +9,45 @@ import textwrap
 from fpdf import FPDF
 from urllib.parse import urlparse
 from os.path import basename
+
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+env_path = Path(__file__).parent / ".env"
+load_dotenv(dotenv_path=env_path)
 
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "static", "dist")
+
+SCAN_TYPES = {
+    "passive": {
+        "label": "Passive Scan",
+        "description": "Quick and non-intrusive. Analyzes traffic without attacking the target.",
+        "duration_hint": "~1 min",
+        "zap_mode": "passive",
+        "nmap_args": ["-F", "-T4"],
+        "alert_limit": 10,
+        "zap_timeout": 90,
+    },
+    "normal": {
+        "label": "Normal Scan",
+        "description": "Balanced coverage. Crawls the site with spider and detects service versions.",
+        "duration_hint": "~3–5 min",
+        "zap_mode": "spider",
+        "nmap_args": ["-sV", "-T4"],
+        "alert_limit": 25,
+        "zap_timeout": 300,
+    },
+    "deep": {
+        "label": "Deep Scan",
+        "description": "Thorough assessment. Active attack simulation plus comprehensive port scanning.",
+        "duration_hint": "~10–20 min",
+        "zap_mode": "active",
+        "nmap_args": ["-sV", "-sC", "-T4", "--top-ports", "1000"],
+        "alert_limit": 50,
+        "zap_timeout": 1200,
+    },
+}
+DEFAULT_SCAN_TYPE = "passive"
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
 CORS(app)
@@ -79,44 +113,109 @@ def count_alerts_by_risk(zap_alerts):
 
 
 # -------------------------------
-# NMAP SCAN (FAST)
+# NMAP SCAN
 # -------------------------------
-def run_nmap_scan(domain):
+def run_nmap_scan(domain, nmap_args=None):
+    args = nmap_args or SCAN_TYPES[DEFAULT_SCAN_TYPE]["nmap_args"]
     try:
         ip = socket.gethostbyname(domain)
-        print(f"[+] Nmap scan on {domain} ({ip})")
+        print(f"[+] Nmap scan on {domain} ({ip}) with args: {args}")
 
-        result = subprocess.check_output(["nmap", "-F", "-T4", ip], text=True)
+        result = subprocess.check_output(["nmap", *args, ip], text=True, timeout=900)
         return result
 
+    except subprocess.TimeoutExpired:
+        return "[Nmap Error] Scan timed out"
     except Exception as e:
         return f"[Nmap Error] {str(e)}"
 
 
 # -------------------------------
-# ZAP PASSIVE SCAN (FAST)
+# ZAP HELPERS
 # -------------------------------
-def zap_passive_scan(url):
-    print(f"[ZAP] Scanning {url}")
-
-    try:
-        zap.urlopen(url)
-    except Exception:
-        return []
-
-    time.sleep(5)
-
-    timeout = 60
+def _wait_zap_passive(timeout):
     start = time.time()
-
     while int(zap.pscan.records_to_scan) > 0:
         if time.time() - start > timeout:
-            print("[ZAP] Timeout reached")
+            print("[ZAP] Passive scan timeout reached")
             break
         time.sleep(2)
 
-    alerts = zap.core.alerts(baseurl=url)
-    return alerts[:10]
+
+def _run_zap_spider(url, timeout):
+    print(f"[ZAP] Spider scan on {url}")
+    try:
+        scan_id = zap.spider.scan(url)
+        start = time.time()
+        while int(zap.spider.status(scan_id)) < 100:
+            if time.time() - start > timeout:
+                print("[ZAP] Spider scan timeout reached")
+                zap.spider.stop(scan_id)
+                break
+            time.sleep(2)
+        return True
+    except Exception as e:
+        print(f"[ZAP] Spider error: {e}")
+        return False
+
+
+def _run_zap_active(url, timeout):
+    print(f"[ZAP] Active scan on {url}")
+    try:
+        scan_id = zap.ascan.scan(url)
+        start = time.time()
+        while int(zap.ascan.status(scan_id)) < 100:
+            if time.time() - start > timeout:
+                print("[ZAP] Active scan timeout reached")
+                zap.ascan.stop(scan_id)
+                break
+            time.sleep(5)
+        return True
+    except Exception as e:
+        print(f"[ZAP] Active scan error: {e}")
+        return False
+
+
+def run_zap_scan(url, scan_config):
+    mode = scan_config["zap_mode"]
+    timeout = scan_config["zap_timeout"]
+    alert_limit = scan_config["alert_limit"]
+    steps = []
+
+    print(f"[ZAP] Starting {mode} scan on {url}")
+
+    try:
+        if mode == "passive":
+            zap.urlopen(url)
+            steps.append("Loaded target through ZAP proxy")
+            time.sleep(5)
+            _wait_zap_passive(timeout)
+            steps.append("Completed passive analysis")
+
+        elif mode == "spider":
+            if _run_zap_spider(url, timeout):
+                steps.append("Spider crawl completed")
+            try:
+                zap.urlopen(url)
+            except Exception:
+                pass
+            _wait_zap_passive(min(timeout, 120))
+            steps.append("Passive analysis on crawled pages")
+
+        elif mode == "active":
+            if _run_zap_spider(url, min(timeout // 3, 300)):
+                steps.append("Spider crawl completed")
+            if _run_zap_active(url, timeout):
+                steps.append("Active scan completed")
+            _wait_zap_passive(min(timeout // 4, 180))
+            steps.append("Passive analysis completed")
+
+        alerts = zap.core.alerts(baseurl=url)
+        return alerts[:alert_limit], steps, None
+
+    except Exception as e:
+        print(f"[ZAP] Scan error: {e}")
+        return [], steps, str(e)
 
 
 # -------------------------------
@@ -135,7 +234,8 @@ def get_fix_suggestion(risk):
 # -------------------------------
 # GEMINI ANALYSIS
 # -------------------------------
-def analyze_with_gemini(zap_alerts, nmap_output, url):
+def analyze_with_gemini(zap_alerts, nmap_output, url, scan_type="passive"):
+    scan_label = SCAN_TYPES.get(scan_type, {}).get("label", scan_type)
     if not GEMINI_API_KEY:
         return {
             "available": False,
@@ -158,6 +258,8 @@ def analyze_with_gemini(zap_alerts, nmap_output, url):
             alerts_text = "No ZAP alerts detected."
 
         prompt = f"""You are a senior application security engineer. Analyze these VAPT scan results for {url}.
+
+Scan Type: {scan_label}
 
 ZAP Vulnerability Alerts:
 {alerts_text}
@@ -191,15 +293,23 @@ Use clear markdown formatting. Be specific and actionable."""
 # -------------------------------
 # PDF REPORT
 # -------------------------------
-def generate_pdf_report(zap_alerts, nmap_output, gemini_analysis=""):
+def generate_pdf_report(
+    zap_alerts, nmap_output, gemini_analysis="", scan_type="passive"
+):
+    scan_label = SCAN_TYPES.get(scan_type, {}).get("label", scan_type)
     pdf = FPDF()
     pdf.add_page()
 
     pdf.set_font("Helvetica", size=14)
     pdf.cell(0, 10, text="VAPT Report", new_x="LMARGIN", new_y="NEXT", align="C")
-    pdf.ln(5)
+    pdf.ln(3)
 
     pdf.set_font("Helvetica", size=10)
+    pdf.cell(
+        0, 8, text=f"Scan Type: {scan_label}", new_x="LMARGIN", new_y="NEXT"
+    )
+    pdf.ln(3)
+
     pdf.cell(0, 8, text="Top Vulnerabilities:", new_x="LMARGIN", new_y="NEXT")
 
     if not zap_alerts:
@@ -260,29 +370,52 @@ def generate_pdf_report(zap_alerts, nmap_output, gemini_analysis=""):
 # -------------------------------
 # SCAN ORCHESTRATION
 # -------------------------------
-def run_full_scan(url):
+def get_scan_config(scan_type):
+    if scan_type not in SCAN_TYPES:
+        return None
+    return SCAN_TYPES[scan_type]
+
+
+def run_full_scan(url, scan_type=DEFAULT_SCAN_TYPE):
+    scan_config = get_scan_config(scan_type)
+    if not scan_config:
+        return None, f"Invalid scan type. Choose: {', '.join(SCAN_TYPES)}"
+
     domain = extract_domain(url)
     if not domain:
         return None, "Invalid URL"
 
-    raw_alerts = zap_passive_scan(url)
+    raw_alerts, zap_steps, zap_error = run_zap_scan(url, scan_config)
     zap_alerts = normalize_zap_alerts(raw_alerts)
-    nmap_output = run_nmap_scan(domain)
+    nmap_output = run_nmap_scan(domain, scan_config["nmap_args"])
 
-    gemini_result = analyze_with_gemini(zap_alerts, nmap_output, url)
+    gemini_result = analyze_with_gemini(
+        zap_alerts, nmap_output, url, scan_type=scan_type
+    )
     gemini_analysis = gemini_result.get("analysis", "")
 
-    report_path = generate_pdf_report(zap_alerts, nmap_output, gemini_analysis)
+    report_path = generate_pdf_report(
+        zap_alerts, nmap_output, gemini_analysis, scan_type=scan_type
+    )
     report_filename = basename(report_path)
 
     return {
         "url": url,
         "domain": domain,
+        "scan_type": scan_type,
+        "scan_label": scan_config["label"],
+        "scan_description": scan_config["description"],
         "zap_alerts": zap_alerts,
         "nmap_output": nmap_output,
         "report_filename": report_filename,
         "summary": count_alerts_by_risk(zap_alerts),
         "gemini": gemini_result,
+        "scan_meta": {
+            "zap_mode": scan_config["zap_mode"],
+            "nmap_args": scan_config["nmap_args"],
+            "zap_steps": zap_steps,
+            "zap_error": zap_error,
+        },
     }, None
 
 
@@ -293,15 +426,31 @@ def run_full_scan(url):
 def api_scan():
     data = request.get_json(silent=True) or {}
     url = (data.get("url") or request.form.get("url") or "").strip()
+    scan_type = (
+        data.get("scan_type") or request.form.get("scan_type") or DEFAULT_SCAN_TYPE
+    ).strip().lower()
 
     if not url:
         return jsonify({"error": "Enter valid URL"}), 400
 
-    result, error = run_full_scan(url)
+    result, error = run_full_scan(url, scan_type=scan_type)
     if error:
         return jsonify({"error": error}), 400
 
     return jsonify(result)
+
+
+@app.route("/api/scan-types", methods=["GET"])
+def api_scan_types():
+    types = {}
+    for key, cfg in SCAN_TYPES.items():
+        types[key] = {
+            "label": cfg["label"],
+            "description": cfg["description"],
+            "duration_hint": cfg["duration_hint"],
+            "zap_mode": cfg["zap_mode"],
+        }
+    return jsonify({"scan_types": types, "default": DEFAULT_SCAN_TYPE})
 
 
 @app.route("/api/health", methods=["GET"])
@@ -310,6 +459,7 @@ def api_health():
         {
             "status": "ok",
             "gemini_configured": bool(GEMINI_API_KEY),
+            "scan_types": list(SCAN_TYPES.keys()),
         }
     )
 

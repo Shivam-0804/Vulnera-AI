@@ -3,7 +3,7 @@ import streamlit as st
 import requests
 import time
 
-from app import app
+from app import app, SCAN_TYPES, DEFAULT_SCAN_TYPE
 
 # -------------------------------
 # Run Flask in background thread
@@ -23,25 +23,36 @@ if "flask_started" not in st.session_state:
 st.set_page_config(page_title="AI VAPT Tool", layout="wide")
 
 st.title("🔍 AI-Powered VAPT Scanner")
-st.markdown("Fast vulnerability scanning using ZAP + Nmap + Gemini AI")
+st.markdown("Vulnerability scanning using ZAP + Nmap + Gemini AI")
 
 url = st.text_input("Enter Target URL", placeholder="https://example.com")
+
+scan_options = {cfg["label"]: key for key, cfg in SCAN_TYPES.items()}
+selected_label = st.selectbox(
+    "Scan Type",
+    options=list(scan_options.keys()),
+    index=0,
+)
+scan_type = scan_options[selected_label]
+st.caption(SCAN_TYPES[scan_type]["description"])
+
+timeout_map = {"passive": 300, "normal": 600, "deep": 1800}
 
 if st.button("Start Scan"):
     if not url:
         st.warning("Please enter a URL")
     else:
-        with st.spinner("Scanning in progress... please wait ⏳"):
+        with st.spinner(f"Running {selected_label}... please wait ⏳"):
             try:
                 response = requests.post(
                     "http://127.0.0.1:5000/api/scan",
-                    json={"url": url},
-                    timeout=300,
+                    json={"url": url, "scan_type": scan_type},
+                    timeout=timeout_map.get(scan_type, 600),
                 )
 
                 if response.status_code == 200:
                     data = response.json()
-                    st.success("Scan Completed ✅")
+                    st.success(f"Scan Completed ✅ — {data.get('scan_label', scan_type)}")
 
                     summary = data.get("summary", {})
                     st.subheader("ZAP Alert Summary")
