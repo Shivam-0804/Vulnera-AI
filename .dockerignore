@@ -1,7 +1,8 @@
 .env
 __pycache__
 venv
+frontend
 frontend/node_modules
 AI-Powered Quick VAPT Scanner.pptx
 df sem9.pdf
-reports
+README.md

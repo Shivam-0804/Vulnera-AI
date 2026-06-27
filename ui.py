@@ -9,7 +9,7 @@ from app import app, SCAN_TYPES, DEFAULT_SCAN_TYPE
 # Run Flask in background thread
 # -------------------------------
 def run_flask():
-    app.run(port=5000, debug=False, use_reloader=False)
+    app.run(host="0.0.0.0",port=5000, debug=False, use_reloader=False)
 
 if "flask_started" not in st.session_state:
     thread = threading.Thread(target=run_flask, daemon=True)
@@ -45,7 +45,7 @@ if st.button("Start Scan"):
         with st.spinner(f"Running {selected_label}... please wait ⏳"):
             try:
                 response = requests.post(
-                    "http://127.0.0.1:5000/api/scan",
+                    "http://0.0.0.0:5000/api/scan",
                     json={"url": url, "scan_type": scan_type},
                     timeout=timeout_map.get(scan_type, 600),
                 )
@@ -71,7 +71,7 @@ if st.button("Start Scan"):
                     report = data.get("report_filename")
                     if report:
                         st.markdown(
-                            f"[⬇️ Download PDF Report](http://127.0.0.1:5000/download/{report})"
+                            f"[⬇️ Download PDF Report](http://0.0.0.0:5000/download/{report})"
                         )
                 else:
                     err = response.json().get("error", response.status_code)
